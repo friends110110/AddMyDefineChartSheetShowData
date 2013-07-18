@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd
+           http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-2.0.xsd
+           http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-2.0.xsd"
+	default-autowire="byName" default-lazy-init="true">
+	
+	
+	<!-- 属性文件读入 -->
+	<bean id="propertyConfigurer"
+		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="locations">
+			<list>
+				<value>/jdbc.properties</value>
+				<value>/hibernate.properties</value>
+			</list>
+		</property>
+	</bean>
+	
+	<!-- 业务逻辑 -->
+	<bean id ="handleHibernateDao" class="cn.com.HandleHibernate.dao.impl.CHandleHibernateDaoImpl"/>
+	<bean id="handleTableDao" class="cn.com.HandleTableData.dao.impl.CHandleTableDaoImpl"/>
+	<bean id ="handleService" class="cn.com.HandleData.service.impl.CHandleServiceImpl"/>
+	
+
+	<!-- 数据源定义,使用Apache DBCP 连接池 -->
+	<bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource"
+			destroy-method="close">
+		<property name="driverClassName" value="${jdbc.driverClassName}" />
+		<property name="url" value="${jdbc.url}" />
+		<property name="username" value="${jdbc.username}" />
+		<property name="password" value="${jdbc.password}" />
+		<property name="maxActive" value="${datasource.maxActive}" />
+		<property name="maxIdle" value="${datasource.maxIdle}" />
+		<property name="maxWait" value="${datasource.maxWait}" />
+	</bean>
+	
+	<!--Hibernate SessionFatory-->
+	<bean id="sessionFactory" class="org.springframework.orm.hibernate3.LocalSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<property name="mappingDirectoryLocations">
+			<list>
+				<value>classpath*:/cn/com/domain</value>
+			</list>
+		</property>
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.dialect">${hibernate.dialect}</prop>
+				<prop key="hibernate.show_sql">${hibernate.show_sql}</prop>
+				<prop key="hibernate.cache.use_query_cache">
+					${hibernate.cache.use_query_cache}
+				</prop>
+				<prop key="hibernate.cache.provider_class">
+					${hibernate.cache.provider_class}
+				</prop>
+				<prop key="hibernate.connection.release_mode">
+					${hibernate.connection.release_mode}
+				</prop>
+			</props>
+		</property>
+	</bean>
+
+	<!-- 事务配置 -->
+	<aop:config proxy-target-class="true">
+		<aop:advisor
+			pointcut="execution(* cn.com.HandleHibernate.dao.impl..*(..))"
+			advice-ref="txAdvice-demo" />
+	</aop:config>
+
+	<tx:advice id="txAdvice-demo">
+		<!--  
+		<tx:attributes>
+			<tx:method name="get*" read-only="true" />
+			<tx:method name="find*" read-only="true" />
+			<tx:method name="is*" read-only="true" />
+			 <tx:method name="search*" read-only="true" />
+			<tx:method name="*" propagation="REQUIRED" />
+		
+		</tx:attributes>
+		-->
+	</tx:advice>
+
+	<bean id="transactionManager"
+		class="org.springframework.orm.hibernate3.HibernateTransactionManager">
+		<property name="sessionFactory" ref="sessionFactory" />
+	</bean>
+	
+</beans>
